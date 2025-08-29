@@ -60,7 +60,7 @@ package com.jasonlat.design.framework.link.singleton;
  * 
  * @author Jasonlat
  * @version 1.0
- * @since 2025-01-18
+ * @since 2025-08-29
  * @see ILogicLink 逻辑责任链接口
  * @see ILogicChainArmory 责任链装配接口
  */

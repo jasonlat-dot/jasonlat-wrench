@@ -56,7 +56,7 @@ jasonlat-wrench/
 
 ### 基本使用
 
-#### 责任链模式示例
+#### 单例模式责任链示例
 
 ```java
 import com.jasonlat.design.framework.link.singleton.*;
@@ -69,17 +69,6 @@ public class ValidationLink extends AbstractLogicLink<String, Map<String, Object
         if (request == null || request.isEmpty()) {
             return false;
         }
-        // 传递给下一个节点
-        return next(request, context);
-    }
-}
-
-public class ProcessLink extends AbstractLogicLink<String, Map<String, Object>, Boolean> {
-    @Override
-    public Boolean apply(String request, Map<String, Object> context) throws Exception {
-        // 处理逻辑
-        context.put("processed", true);
-        // 传递给下一个节点
         return next(request, context);
     }
 }
@@ -87,12 +76,35 @@ public class ProcessLink extends AbstractLogicLink<String, Map<String, Object>, 
 // 2. 构建责任链
 ValidationLink validator = new ValidationLink();
 ProcessLink processor = new ProcessLink();
-
-validator.appendNext(processor)
+validator.appendNext(processor);
 
 // 3. 执行责任链
 Map<String, Object> context = new HashMap<>();
 Boolean result = validator.apply("test request", context);
+```
+
+#### 原型模式责任链示例
+
+```java
+import com.jasonlat.design.framework.link.prototype.*;
+
+// 1. 创建业务逻辑处理器
+public class RuleLogic201 implements ILogicHandler<String, DynamicContext> {
+    @Override
+    public String apply(String request, DynamicContext context) throws Exception {
+        // 业务逻辑处理
+        context.setData("processed", true);
+        return "处理完成";
+    }
+}
+
+// 2. 使用工厂创建责任链
+Rule02TradeRuleFactory factory = new Rule02TradeRuleFactory();
+ILink<String, DynamicContext> chain = factory.openLogicChain();
+
+// 3. 执行责任链
+DynamicContext context = new DynamicContext();
+String result = chain.apply("trade_request", context);
 ```
 
 ## 📦 模块说明
@@ -103,18 +115,21 @@ Boolean result = validator.apply("test request", context);
 
 #### 责任链模式 (Chain of Responsibility)
 
-- **核心接口**:
-  - `ILogicLink<T, D, R>` - 责任链节点接口
-  - `ILogicChainArmory<T, D, R>` - 责任链装配接口
+**单例模式责任链**:
+- **核心接口**: `ILogicLink<T, D, R>` - 责任链节点接口
+- **抽象实现**: `AbstractLogicLink<T, D, R>` - 抽象责任链节点
+- **特性**: 节点复用、内存高效、适合无状态处理
 
-- **抽象实现**:
-  - `AbstractLogicLink<T, D, R>` - 抽象责任链节点
+**原型模式责任链**:
+- **核心接口**: `ILink<T, D>` - 链路接口，`ILogicHandler<T, D>` - 逻辑处理器接口
+- **工厂实现**: `LinkArmory` - 链路装配工厂
+- **特性**: 动态创建、状态隔离、支持并发处理
 
-- **特性**:
-  - 泛型支持，类型安全
-  - 灵活的节点连接方式
-  - 完整的异常处理机制
-  - 支持单例和原型两种模式
+**共同特性**:
+- 泛型支持，类型安全
+- 灵活的节点连接方式
+- 完整的异常处理机制
+- Spring框架集成支持
 
 ## 🧪 测试
 
@@ -134,11 +149,15 @@ mvn test
 ### 运行特定测试类
 
 ```bash
-# 运行责任链框架测试
+# 运行单例模式责任链测试
 mvn test -Dtest=AppTest
+
+# 运行原型模式责任链测试
+mvn test -Dtest=PrototypeAppTest
 
 # 运行特定测试方法
 mvn test -Dtest=AppTest#testCompleteChainExecution
+mvn test -Dtest=PrototypeAppTest#testPrototypeChainBasicExecution
 ```
 
 ### 测试覆盖率
@@ -150,118 +169,19 @@ mvn test -Dtest=AppTest#testCompleteChainExecution
 - **性能测试** - 测试责任链的执行性能
 - **边界条件测试** - 验证各种边界情况
 - **真实业务场景测试** - 模拟实际业务流程
+- **设计模式测试** - 分别测试单例模式和原型模式的责任链实现
+- **Spring集成测试** - 验证与Spring框架的集成功能
 
 ### 测试示例
 
-#### 责任链完整执行测试
-
-```java
-@Test
-public void testCompleteChainExecution() {
-    // 构建责任链
-    ValidationLink validator = new ValidationLink();
-    ProcessLink processor = new ProcessLink();
-    AuditLink auditor = new AuditLink();
-    
-    validator.appendNext(processor).appendNext(auditor);
-    ILogicLink<TestRequest, TestContext, TestResult> chain = validator;
-    
-    // 执行测试
-    TestRequest request = new TestRequest("test001", "chainData", true);
-    TestContext context = new TestContext();
-    
-    TestResult result = chain.apply(request, context);
-    
-    // 验证结果
-    assertTrue("责任链应该执行成功", result.isSuccess());
-    assertEquals("应该设置验证标志", true, context.getAttribute("validated"));
-    assertEquals("应该设置处理数据", "processed_chainData", context.getAttribute("processedData"));
-}
-```
-
-#### 异常处理测试
-
-```java
-@Test
-public void testChainException() {
-    // 构建包含异常节点的责任链
-    ValidationLink validator = new ValidationLink();
-    ExceptionLink exceptionNode = new ExceptionLink();
-    AuditLink auditor = new AuditLink();
-    
-    validator.appendNext(exceptionNode).appendNext(auditor);
-    
-    TestRequest request = new TestRequest("test004", "exceptionData", true);
-    TestContext context = new TestContext();
-    
-    try {
-        chain.apply(request, context);
-        fail("应该抛出异常");
-    } catch (RuntimeException e) {
-        assertEquals("模拟异常", e.getMessage());
-        assertTrue("应该记录错误", context.getErrors().size() > 0);
-    }
-}
-```
-
-#### 性能测试
-
-```java
-@Test
-public void testChainPerformance() {
-    // 构建长责任链（12个节点）
-    ILogicLink<TestRequest, TestContext, TestResult> chain = buildPerformanceChain();
-    
-    TestRequest request = new TestRequest("perf001", "performanceData", true);
-    
-    long startTime = System.currentTimeMillis();
-    
-    // 执行100次测试
-    for (int i = 0; i < 100; i++) {
-        TestContext context = new TestContext();
-        TestResult result = chain.apply(request, context);
-        assertTrue("性能测试中每次执行都应该成功", result.isSuccess());
-    }
-    
-    long duration = System.currentTimeMillis() - startTime;
-    
-    // 验证性能（100次执行应该在5秒内完成）
-    assertTrue("100次责任链执行应该在5秒内完成", duration < 5000);
-}
-```
-
-### 测试输出示例
-
-运行测试时，你将看到详细的执行日志：
-
-```
-=== 开始测试完整责任链执行 ===
-责任链构建完成，链头节点: ValidationLink
-
-开始执行责任链...
-请求信息: ID=test001, Data=chainData, Valid=true
-
---- ValidationLink 执行 ---
-验证请求: test001
-验证通过，设置验证标志
-传递给下一个节点: ProcessLink
-
---- ProcessLink 执行 ---
-检查验证状态: true
-处理数据: chainData -> processed_chainData
-传递给下一个节点: AuditLink
-
---- AuditLink 执行 ---
-开始审计记录: test001
-设置审计时间和用户
-审计记录完成
-
-✓ 完整责任链执行测试通过
-```
+项目提供了完整的测试用例，包括单例模式和原型模式的责任链测试。详细的测试示例和执行日志请参考各模块的README文档。
 
 ## 📚 文档
 
-- [责任链模式使用指南](./jasonlat-wrench-starter-design-framework/src/main/java/com/jasonlat/design/framework/link/singleton/README.md)
+- [单例模式责任链使用指南](./jasonlat-wrench-starter-design-framework/src/main/java/com/jasonlat/design/framework/link/singleton/README.md)
+- [单例模式测试指南](./jasonlat-wrench-test/src/test/java/com/jasonlat/singleton/README.md)
+- [原型模式责任链使用指南](./jasonlat-wrench-starter-design-framework/src/main/java/com/jasonlat/design/framework/link/prototype/README.md)
+- [原型模式测试指南](./jasonlat-wrench-test/src/test/java/com/jasonlat/prototype/README.md)
 - [API文档](./docs/api/)
 - [最佳实践](./docs/best-practices.md)
 

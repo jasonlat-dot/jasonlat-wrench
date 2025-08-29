@@ -19,6 +19,7 @@
   <url>https://github.com/jasonlat-dot/jasonlat-wrench</url>
   <modules>
     <module>jasonlat-wrench-starter-design-framework</module>
+      <module>jasonlat-wrench-test</module>
   </modules>
 
   <properties>

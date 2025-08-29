@@ -348,7 +348,7 @@ public class SpringManagedLink extends AbstractLogicLink<Request, Context, Resul
 
 ## 版本历史
 
-- **v1.0** (2025-01-18): 初始版本，提供基础的责任链框架
+- **v1.0** (2025-08-28): 初始版本，提供基础的责任链框架
 
 ## 作者
 

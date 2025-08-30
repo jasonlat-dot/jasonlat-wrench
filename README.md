@@ -66,7 +66,7 @@ jasonlat-wrench/
 
 ```xml
 <dependency>
-    <groupId>com.jasonlat</groupId>
+    <groupId>com.jasonlat.dot</groupId>
     <artifactId>jasonlat-wrench-starter-design-framework</artifactId>
     <version>1.0</version>
 </dependency>

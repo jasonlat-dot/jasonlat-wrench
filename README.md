@@ -12,6 +12,7 @@
 ### 🎯 核心特性
 
 - **🔗 责任链模式框架** - 提供完整的责任链模式实现，支持灵活的业务流程编排
+- **🌳 策略模式规则树** - 基于策略模式的规则决策树框架，支持多线程异步数据加载
 - **🏗️ 企业级架构** - 基于Spring Boot生态，遵循企业级开发最佳实践
 - **📦 模块化设计** - 采用Maven多模块架构，支持按需引入
 - **🧪 完整测试覆盖** - 提供全面的单元测试和集成测试
@@ -25,10 +26,17 @@ jasonlat-wrench/
 │   ├── src/main/java/
 │   │   └── com/jasonlat/design/
 │   │       └── framework/
-│   │           └── link/                        # 责任链模式实现
-│   │               ├── singleton/              # 单例模式责任链
-│   │               └── prototype/              # 原型模式责任链
+│   │           ├── link/                        # 责任链模式实现
+│   │           │   ├── singleton/              # 单例模式责任链
+│   │           │   └── prototype/              # 原型模式责任链
+│   │           └── tree/                        # 策略模式规则树实现
+│   │               ├── AbstractStrategyRouter.java
+│   │               ├── AbstractMultiThreadStrategyRouter.java
+│   │               ├── StrategyHandler.java
+│   │               └── StrategyMapper.java
 │   └── src/test/java/                          # 测试代码
+├── jasonlat-wrench-test/                       # 测试模块
+│   └── src/test/java/com/jasonlat/tree/        # 规则树测试用例
 ├── pom.xml                                     # 父级POM配置
 ├── LICENSE                                     # MIT许可证
 └── README.md                                   # 项目文档
@@ -107,6 +115,79 @@ DynamicContext context = new DynamicContext();
 String result = chain.apply("trade_request", context);
 ```
 
+#### 策略模式规则树示例
+
+```java
+import com.jasonlat.design.framework.tree.*;
+
+// 1. 创建策略节点
+@Component
+public class AccountNode extends AbstractMultiThreadStrategyRouter<String, DynamicContext, String> {
+    
+    @Resource
+    private ThreadPoolExecutor threadPoolExecutor;
+    
+    @Autowired
+    private MemberLevel1Node memberLevel1Node;
+    
+    @Autowired
+    private MemberLevel2Node memberLevel2Node;
+    
+    // 多线程异步数据加载
+    @Override
+    protected void multiThread(String requestParameter, DynamicContext dynamicContext) 
+            throws ExecutionException, InterruptedException, TimeoutException {
+        
+        // 异步查询账户标签
+        CompletableFuture<String> accountType01 = CompletableFuture.supplyAsync(() -> {
+            // 模拟查询账户状态
+            return new Random().nextBoolean() ? "账户冻结" : "账户可用";
+        }, threadPoolExecutor);
+        
+        // 异步查询授信数据
+        CompletableFuture<String> accountType02 = CompletableFuture.supplyAsync(() -> {
+            // 模拟查询授信状态
+            return new Random().nextBoolean() ? "拦截" : "已授信";
+        }, threadPoolExecutor);
+        
+        // 等待所有异步任务完成
+        CompletableFuture.allOf(accountType01, accountType02)
+                .thenRun(() -> {
+                    dynamicContext.setValue("accountType01", accountType01.join());
+                    dynamicContext.setValue("accountType02", accountType02.join());
+                }).join();
+    }
+    
+    // 策略路由选择
+    @Override
+    public StrategyHandler<String, DynamicContext, String> get(
+            String requestParameter, DynamicContext dynamicContext) throws Exception {
+        
+        String accountType01 = dynamicContext.getValue("accountType01");
+        String accountType02 = dynamicContext.getValue("accountType02");
+        
+        // 根据异步数据进行路由决策
+        if ("账户冻结".equals(accountType01) || "拦截".equals(accountType02)) {
+            return memberLevel1Node;
+        }
+        return memberLevel2Node;
+    }
+}
+
+// 2. 使用策略工厂
+@Service
+public class StrategyFactory {
+    
+    @Autowired
+    private RootNode rootNode;
+    
+    public String processRequest(String requestParameter) throws Exception {
+        DynamicContext context = new DynamicContext();
+        return rootNode.apply(requestParameter, context);
+    }
+}
+```
+
 ## 📦 模块说明
 
 ### jasonlat-wrench-starter-design-framework
@@ -130,6 +211,28 @@ String result = chain.apply("trade_request", context);
 - 灵活的节点连接方式
 - 完整的异常处理机制
 - Spring框架集成支持
+
+#### 策略模式规则树 (Tree Strategy Pattern)
+
+**核心组件**:
+- **StrategyMapper<T, D, R>** - 策略映射器接口，根据条件选择处理策略
+- **StrategyHandler<T, D, R>** - 策略处理器接口，定义具体业务处理逻辑
+- **AbstractStrategyRouter<T, D, R>** - 策略路由抽象类，提供基础路由功能
+- **AbstractMultiThreadStrategyRouter<T, D, R>** - 多线程策略路由，支持异步数据加载
+
+**规则决策树特性**:
+- **树形结构** - 层次化组织业务逻辑，路径清晰可视化
+- **动态路由** - 运行时根据业务条件智能选择处理节点
+- **多线程异步** - 支持并行数据加载，显著提升处理性能
+- **策略模式** - 易于扩展新节点，无需修改现有代码
+- **上下文传递** - 动态上下文支持节点间数据共享和传递
+
+**应用场景**:
+- 复杂业务规则引擎
+- 多条件决策流程
+- 需要异步数据加载的业务场景
+- 风控规则处理
+- 用户权限和等级判断
 
 ## 🧪 测试
 
@@ -155,35 +258,48 @@ mvn test -Dtest=AppTest
 # 运行原型模式责任链测试
 mvn test -Dtest=PrototypeAppTest
 
+# 运行策略模式规则树测试
+mvn test -Dtest=TreeAppTest
+
 # 运行特定测试方法
 mvn test -Dtest=AppTest#testCompleteChainExecution
 mvn test -Dtest=PrototypeAppTest#testPrototypeChainBasicExecution
+mvn test -Dtest=TreeAppTest#testTreeStrategyExecution
 ```
 
 ### 测试覆盖率
 
 项目包含完整的测试用例，覆盖以下场景：
-- **单元测试** - 测试单个责任链节点的功能
-- **集成测试** - 测试完整责任链的执行流程
+- **单元测试** - 测试单个责任链节点和策略节点的功能
+- **集成测试** - 测试完整责任链和规则树的执行流程
 - **异常处理测试** - 验证异常情况下的处理机制
-- **性能测试** - 测试责任链的执行性能
+- **性能测试** - 测试责任链和多线程异步处理的执行性能
 - **边界条件测试** - 验证各种边界情况
 - **真实业务场景测试** - 模拟实际业务流程
-- **设计模式测试** - 分别测试单例模式和原型模式的责任链实现
+- **设计模式测试** - 分别测试单例模式、原型模式责任链和策略模式规则树实现
+- **多线程测试** - 验证异步数据加载和并发处理能力
 - **Spring集成测试** - 验证与Spring框架的集成功能
 
 ### 测试示例
 
-项目提供了完整的测试用例，包括单例模式和原型模式的责任链测试。详细的测试示例和执行日志请参考各模块的README文档。
+项目提供了完整的测试用例，包括：
+- **单例模式责任链测试** - 验证节点复用和无状态处理
+- **原型模式责任链测试** - 验证动态创建和状态隔离
+- **策略模式规则树测试** - 验证多线程异步数据加载和决策路由
+
+详细的测试示例和执行日志请参考各模块的README文档。
 
 ## 📚 文档
 
+### 责任链模式文档
 - [单例模式责任链使用指南](./jasonlat-wrench-starter-design-framework/src/main/java/com/jasonlat/design/framework/link/singleton/README.md)
 - [单例模式测试指南](./jasonlat-wrench-test/src/test/java/com/jasonlat/singleton/README.md)
 - [原型模式责任链使用指南](./jasonlat-wrench-starter-design-framework/src/main/java/com/jasonlat/design/framework/link/prototype/README.md)
 - [原型模式测试指南](./jasonlat-wrench-test/src/test/java/com/jasonlat/prototype/README.md)
-- [API文档](./docs/api/)
-- [最佳实践](./docs/best-practices.md)
+
+### 策略模式规则树文档
+- [策略模式规则树使用指南](./jasonlat-wrench-starter-design-framework/src/main/java/com/jasonlat/design/framework/tree/README.md)
+- [策略模式规则树测试指南](./jasonlat-wrench-test/src/test/java/com/jasonlat/tree/README.md)
 
 ## 🤝 贡献指南
 
@@ -226,6 +342,22 @@ mvn test -Dtest=PrototypeAppTest#testPrototypeChainBasicExecution
 - 实现责任链模式框架
 - 提供完整的测试用例
 - 添加详细的文档说明
+
+### v1.1
+- 新增原型模式责任链支持
+- 优化异常处理机制
+- 完善文档和示例
+
+### v1.2
+- 增强Spring框架集成
+- 添加性能优化
+- 扩展测试覆盖率
+
+### v1.3
+- 新增策略模式规则树框架
+- 实现多线程异步数据加载支持
+- 添加动态上下文和策略路由功能
+- 完善规则决策树测试用例
 
 ---
 

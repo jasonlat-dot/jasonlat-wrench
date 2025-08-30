@@ -1,7 +1,7 @@
 package com.jasonlat;
 
 import com.jasonlat.design.framework.link.singleton.ILogicLink;
-import com.jasonlat.singleton.factory.Rule01TradeRuleFactory;
+import com.jasonlat.link.singleton.factory.Rule01TradeRuleFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 import org.junit.runner.RunWith;

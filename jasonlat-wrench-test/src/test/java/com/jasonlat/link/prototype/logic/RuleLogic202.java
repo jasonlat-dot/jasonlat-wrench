@@ -1,8 +1,8 @@
-package com.jasonlat.prototype.logic;
+package com.jasonlat.link.prototype.logic;
 
 
 import com.jasonlat.design.framework.link.prototype.handler.ILogicHandler;
-import com.jasonlat.prototype.factory.Rule02TradeRuleFactory;
+import com.jasonlat.link.prototype.factory.Rule02TradeRuleFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 

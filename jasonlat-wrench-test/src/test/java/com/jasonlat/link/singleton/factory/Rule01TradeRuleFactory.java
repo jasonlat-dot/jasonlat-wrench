@@ -1,8 +1,8 @@
-package com.jasonlat.singleton.factory;
+package com.jasonlat.link.singleton.factory;
 
 import com.jasonlat.design.framework.link.singleton.ILogicLink;
-import com.jasonlat.singleton.logic.RuleLogic101;
-import com.jasonlat.singleton.logic.RuleLogic102;
+import com.jasonlat.link.singleton.logic.RuleLogic101;
+import com.jasonlat.link.singleton.logic.RuleLogic102;
 import lombok.*;
 import org.springframework.stereotype.Service;
 

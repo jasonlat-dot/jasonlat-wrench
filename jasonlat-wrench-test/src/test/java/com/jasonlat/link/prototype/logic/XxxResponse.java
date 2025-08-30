@@ -1,4 +1,4 @@
-package com.jasonlat.prototype.logic;
+package com.jasonlat.link.prototype.logic;
 
 /**
  * @author Jasonlat

@@ -1,11 +1,11 @@
-package com.jasonlat.prototype.factory;
+package com.jasonlat.link.prototype.factory;
 
 
 import com.jasonlat.design.framework.link.prototype.LinkArmory;
 import com.jasonlat.design.framework.link.prototype.chain.BusinessLinkedList;
-import com.jasonlat.prototype.logic.RuleLogic201;
-import com.jasonlat.prototype.logic.RuleLogic202;
-import com.jasonlat.prototype.logic.XxxResponse;
+import com.jasonlat.link.prototype.logic.RuleLogic201;
+import com.jasonlat.link.prototype.logic.RuleLogic202;
+import com.jasonlat.link.prototype.logic.XxxResponse;
 import lombok.*;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;

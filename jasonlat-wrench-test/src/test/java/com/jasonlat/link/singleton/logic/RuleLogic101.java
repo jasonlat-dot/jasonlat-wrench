@@ -1,7 +1,7 @@
-package com.jasonlat.singleton.logic;
+package com.jasonlat.link.singleton.logic;
 
 import com.jasonlat.design.framework.link.singleton.AbstractLogicLink;
-import com.jasonlat.singleton.factory.Rule01TradeRuleFactory;
+import com.jasonlat.link.singleton.factory.Rule01TradeRuleFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
